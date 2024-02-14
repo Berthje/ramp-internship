@@ -21,10 +21,21 @@ export function App() {
 
   const loadAllTransactions = useCallback(async () => {
     setIsLoading(true)
-    transactionsByEmployeeUtils.invalidateData()
+
+    //transactionsByEmployeeUtils.invalidateData()
+    //bug 7 solution, remove this since it will set it to null and
+    // it should keep the state of checked or unchecked.
 
     await employeeUtils.fetchAll()
+
+    //bug 5 solution, just set the loading false after it fetches that
+    setIsLoading(false)
+
     await paginatedTransactionsUtils.fetchAll()
+
+    // bug 7 solution, already working as it should, persists the value when approving transactions
+    // when changing from employee it shows the the recently approved transaction, uncheck it there
+    // , change employees again and it still persists the value (like it should)
 
     setIsLoading(false)
   }, [employeeUtils, paginatedTransactionsUtils, transactionsByEmployeeUtils])
@@ -42,6 +53,9 @@ export function App() {
       loadAllTransactions()
     }
   }, [employeeUtils.loading, employees, loadAllTransactions])
+
+  const shouldShowViewMoreButton =
+    transactions !== null && paginatedTransactions !== null && paginatedTransactions.nextPage !== null
 
   return (
     <Fragment>
@@ -64,8 +78,10 @@ export function App() {
             if (newValue === null) {
               return
             }
-
-            await loadTransactionsByEmployee(newValue.id)
+            //bug 3, Cannot select All Employees after selecting an employee
+            newValue.id !== ""
+              ? await loadTransactionsByEmployee(newValue.id)
+              : await loadAllTransactions()
           }}
         />
 
@@ -74,7 +90,8 @@ export function App() {
         <div className="RampGrid">
           <Transactions transactions={transactions} />
 
-          {transactions !== null && (
+          {shouldShowViewMoreButton && (
+            //bug 6 solution (partial, see upper const variable for readability)
             <button
               className="RampButton"
               disabled={paginatedTransactionsUtils.loading}
